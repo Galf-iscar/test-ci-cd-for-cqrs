@@ -1,0 +1,56 @@
+name: Code Quality with SonarQube
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+
+jobs:
+  sonar-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Trust AKS Ingress CA Certificate
+      run: |
+        echo "${{ secrets.SONAR_CA_CERT }}" > aks-ingress-ca.crt
+        sudo cp aks-ingress-ca.crt /usr/local/share/ca-certificates/aks-ingress-ca.crt
+        sudo update-ca-certificates
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Decode and write nuget.config and TLS cert
+      run: |
+        echo "${{ secrets.NUGET_CONFIG_CONTENT }}" | base64 --decode > ./nuget.config
+        echo "${{ secrets.TLS_CRT_CONTENT }}" | base64 --decode > ./nexus.crt
+        sudo cp ./nexus.crt /usr/local/share/ca-certificates/nexus.crt
+        sudo update-ca-certificates
+
+    - name: SonarQube Scan
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet tool install --global dotnet-sonarscanner
+        dotnet sonarscanner begin /k:"horizon.purchase.backend" /d:sonar.host.url="${{ secrets.HORIZON_BASE_URL }}/sonarqube/" /d:sonar.login="$SONAR_TOKEN"
+        dotnet build Horizon.Purchase.Backend.sln --configfile ./nuget.config
+        dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
+
+    - name: Send email with SonarQube report link
+      uses: dawidd6/action-send-mail@v4
+      with:
+        server_address: smtp.office365.com
+        server_port: 587
+        username: HorizonSys@imc-grp.com
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: SonarQube Report for Commit ${{ github.sha }}
+        body: |
+          The SonarQube report for commit ${{ github.sha }} is available at:
+          ${{ secrets.HORIZON_BASE_URL }}/sonarqube/dashboard?id=horizon.purchase.backend
+        to: ${{ steps.get_email.outputs.email }}
+        from: "GitHub Action"

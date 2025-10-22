@@ -1,0 +1,6 @@
+services:
+  tasksmanagement.api:
+    image: ${DOCKER_REGISTRY-}tasksmanagementapi
+    build:
+      context: .
+      dockerfile: API/Dockerfile
