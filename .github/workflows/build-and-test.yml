@@ -22,8 +22,8 @@ jobs:
 
     - name: Install custom TLS cert
       run: |
-          echo "${{ secrets.TLS_CRT_CONTENT }}" | base64 --decode | sudo tee /usr/local/share/ca-certificates/nexus.crt
-          sudo update-ca-certificates
+        sudo cp ./API/tls.crt /usr/local/share/ca-certificates/nexus.crt
+        sudo update-ca-certificates
 
     - name: Add Nexus NuGet source
       run: |
