@@ -39,8 +39,8 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         dotnet tool install --global dotnet-sonarscanner
-        dotnet sonarscanner begin /k:"horizon.purchase.backend" /d:sonar.host.url="${{ secrets.HORIZON_BASE_URL }}/sonarqube/" /d:sonar.login="$SONAR_TOKEN"
-        dotnet build Horizon.Purchase.Backend.sln --configfile ./nuget.config
+        dotnet sonarscanner begin /k:"cqrs_app" /d:sonar.host.url="${{ secrets.HORIZON_BASE_URL }}/sonarqube/" /d:sonar.login="$SONAR_TOKEN"
+        dotnet build ./template-content/CQRS_App.sln --configfile ./nuget.config
         dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
 
     - name: Send email with SonarQube report link
@@ -53,6 +53,6 @@ jobs:
         subject: SonarQube Report for Commit ${{ github.sha }}
         body: |
           The SonarQube report for commit ${{ github.sha }} is available at:
-          ${{ secrets.HORIZON_BASE_URL }}/sonarqube/dashboard?id=horizon.purchase.backend
+          ${{ secrets.HORIZON_BASE_URL }}/sonarqube/dashboard?id=cqrs_app
         to: ${{ steps.get_email.outputs.email }}
         from: "GitHub Action"
