@@ -20,6 +20,16 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Install custom TLS cert
+      run: |
+          echo "${{ secrets.TLS_CRT_CONTENT }}" | base64 --decode | sudo tee /usr/local/share/ca-certificates/nexus.crt
+          sudo update-ca-certificates
+
+    - name: Add Nexus NuGet source
+      run: |
+            dotnet nuget add source "https://akssvc-horizon-purchase.ssl.imc-companies.com/nexus/repository/horizon.backend.nuget/" --name NexusRepo --username ${{ secrets.NEXUS_USERNAME }} --password ${{ secrets.NEXUS_PASSWORD }} --store-password-in-clear-text --valid-authentication-types basic
+
+
     - name: Restore dependencies
       run: dotnet restore ./CQRS_App.sln
 
