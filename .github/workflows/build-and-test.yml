@@ -1,0 +1,77 @@
+name: Build, Test, and SonarQube Integration
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-sonarqube:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run tests with coverage
+      id: run-tests
+      run: |
+        dotnet test test_ci_cd_for_cqrs.Tests/test_ci_cd_for_cqrs.Tests.csproj \
+          --configuration Release \
+          --no-build \
+          --verbosity normal \
+          --collect:"XPlat Code Coverage" \
+          --results-directory:"TestResults" \
+          --logger:"trx;LogFileName=test-results.trx"
+
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+    - name: Generate coverage report
+      id: generate-coverage
+      run: |
+        reportgenerator \
+          -reports:"TestResults/*/coverage.cobertura.xml" \
+          -targetdir:"CoverageReport" \
+          -reporttypes:"Html;HtmlSummary;Badges;JsonSummary;MarkdownSummary"
+
+    - name: Upload coverage reports as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          CoverageReport/
+          TestResults/
+
+    - name: SonarQube Analysis
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        dotnet tool install --global dotnet-sonarscanner
+        dotnet sonarscanner begin \
+          /k:"horizon.purchase.backend" \
+          /d:sonar.host.url="${{ secrets.HORIZON_BASE_URL }}/sonarqube/" \
+          /d:sonar.login="$SONAR_TOKEN" \
+          /d:sonar.coverageReportPaths="CoverageReport/Summary.json" \
+          /d:sonar.cs.vstest.reportsPaths="TestResults/test-results.trx"
+        dotnet build Horizon.Purchase.Backend.sln --configfile ./nuget.config
+        dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
+
+    - name: Check SonarQube Quality Gate
+      uses: sonarsource/sonarqube-quality-gate-action@v1.0.0
+      with:
+        host-url: ${{ secrets.HORIZON_BASE_URL }}/sonarqube/
+        sonar-token: ${{ secrets.SONAR_TOKEN }}

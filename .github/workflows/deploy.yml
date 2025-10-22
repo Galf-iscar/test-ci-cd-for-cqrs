@@ -1,0 +1,55 @@
+name: Deploy Coverage Reports to GitHub Pages
+
+on:
+  push:
+    branches: [ "main", "master" ]
+
+permissions:
+  pages: write
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-to-pages:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download coverage reports
+      uses: actions/download-artifact@v4
+      with:
+        name: coverage-reports
+        path: .
+
+    - name: Inspect reports before deployment
+      run: |
+        echo "Listing current directory"
+        ls -la
+        echo "Listing reports directory (if present)"
+        ls -la reports || true
+        echo "Listing CoverageReport directory (if present)"
+        ls -la CoverageReport || true
+        if [ -f reports/index.html ]; then
+          echo "reports/index.html found"
+        elif [ -f reports/coverage.html ]; then
+          echo "reports/coverage.html found — copying to reports/index.html"
+          cp reports/coverage.html reports/index.html
+        elif [ -f CoverageReport/index.html ]; then
+          echo "CoverageReport/index.html found — copying to reports/index.html"
+          mkdir -p reports
+          cp CoverageReport/index.html reports/index.html
+        else
+          echo "ERROR: No index.html (or coverage.html) found in reports or CoverageReport. Aborting deployment."
+          exit 1
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: reports
+
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v4
