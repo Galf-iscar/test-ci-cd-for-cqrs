@@ -20,9 +20,13 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Verify certificate
+      run: |
+        sudo openssl x509 -in /usr/local/share/ca-certificates/nexus.crt -noout -subject -issuer
+
     - name: Install custom TLS cert
       run: |
-        echo "${{ secrets.TLS_CRT_CONTENT }}" | base64 --decode | sudo tee /usr/local/share/ca-certificates/nexus.crt > /dev/null
+        echo "${{ secrets.TLS_CRT_CONTENT }}" | sudo tee /usr/local/share/ca-certificates/nexus.crt > /dev/null
         sudo chmod 644 /usr/local/share/ca-certificates/nexus.crt
         sudo update-ca-certificates
         echo "Custom Nexus TLS certificate installed successfully"
