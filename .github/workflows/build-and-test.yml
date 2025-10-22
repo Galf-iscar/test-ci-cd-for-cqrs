@@ -21,15 +21,15 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore ./template-content/CQRS_App.sln
+      run: dotnet restore ./CQRS_App.sln
 
     - name: Build solution
-      run: dotnet build ./template-content/CQRS_App.sln --no-restore --configuration Release
+      run: dotnet build ./CQRS_App.sln --no-restore --configuration Release
 
     - name: Run tests with coverage
       id: run-tests
       run: |
-        dotnet test ./template-content/Tests/CQRS_App.Tests/CQRS_App.Tests.csproj \
+        dotnet test ./Tests/CQRS_App.Tests/CQRS_App.Tests.csproj \
           --configuration Release \
           --no-build \
           --verbosity normal \
@@ -67,7 +67,7 @@ jobs:
           /d:sonar.login="$SONAR_TOKEN" \
           /d:sonar.coverageReportPaths="CoverageReport/Summary.json" \
           /d:sonar.cs.vstest.reportsPaths="TestResults/test-results.trx"
-        dotnet build ./template-content/CQRS_App.sln --configfile ./nuget.config
+        dotnet build ./CQRS_App.sln --configfile ./nuget.config
         dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
 
     - name: Check SonarQube Quality Gate
