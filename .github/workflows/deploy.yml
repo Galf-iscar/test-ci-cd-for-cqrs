@@ -1,8 +1,10 @@
 name: Deploy Coverage Reports to GitHub Pages
 
 on:
-  push:
-    branches: [ "main", "master" ]
+  workflow_run:
+    workflows: ["code-quality"]
+    types:
+      - completed
 
 permissions:
   pages: write
