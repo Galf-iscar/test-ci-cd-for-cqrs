@@ -22,8 +22,10 @@ jobs:
 
     - name: Install custom TLS cert
       run: |
-        sudo cp ./API/tls.crt /usr/local/share/ca-certificates/nexus.crt
+        echo "${{ secrets.TLS_CRT_CONTENT }}" | base64 --decode | sudo tee /usr/local/share/ca-certificates/nexus.crt > /dev/null
+        sudo chmod 644 /usr/local/share/ca-certificates/nexus.crt
         sudo update-ca-certificates
+        echo "Custom Nexus TLS certificate installed successfully"
 
     - name: Add Nexus NuGet source
       run: |
@@ -39,7 +41,7 @@ jobs:
     - name: Run tests with coverage
       id: run-tests
       run: |
-        dotnet test ./Tests/CQRS_App.Tests/CQRS_App.Tests.csproj \
+        dotnet test ./Tests/CQRS_App.Tests.csproj \
           --configuration Release \
           --no-build \
           --verbosity normal \

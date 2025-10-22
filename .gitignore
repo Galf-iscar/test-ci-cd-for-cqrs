@@ -371,3 +371,4 @@ FodyWeavers.xsd
 /bin
 /.vs
 /.editorconfig
+/API/tls.crt
